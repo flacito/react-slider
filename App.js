@@ -11,9 +11,13 @@ import {
   StyleSheet,
   Image,
   View,
+  StatusBar,
+  TouchableOpacity,
+  Text,
   Animated,
 } from 'react-native';
-import ReactTimeout from 'react-timeout'
+import ReactTimeout from 'react-timeout';
+import * as Progress from 'react-native-progress';
 
 const images = [
   require('./images/lunge-1.png'),
@@ -21,8 +25,8 @@ const images = [
   require('./images/lunge-3.png'),
 ];
 
-const windowWidth = Dimensions.get('window').width + Dimensions.get('window').width * .20
-const windowHeight = Dimensions.get('window').height
+const windowWidth = Dimensions.get('window').width + Dimensions.get('window').width * .20;
+const windowHeight = Dimensions.get('window').height;
 
 type Props = {
 
@@ -35,49 +39,140 @@ class App extends Component<Props> {
     this.state = {
       imageIndex: 0,
       isUp: true,
-      bounceValue: new Animated.Value(0),
+      bounceImage: new Animated.Value(0),
+      bounceHeader: new Animated.Value(0),
+      fadeNextText: new Animated.Value(0),
     }
   }
 
   componentWillMount() {
+    StatusBar.setBarStyle('light-content', true)
     this.props.setInterval(this.nextExercise, 1000);
     this.setState({
-      bounceValue: new Animated.Value(0),
+      bounceImage: new Animated.Value(-circleSize - 35),
+      bounceHeader: new Animated.Value(0),
+      fadeNextText: new Animated.Value(0),
     });
-    this.slide();
   }
 
   componentWillUnmount() {
     this.props.clearInterval();
   }
 
-  slide = () => {
-    Animated.spring(this.state.bounceValue, {
-      toValue: windowWidth,
-      delay: 1500,
-      bounciness: 15,
+  reveal = () => {
+    StatusBar.setBarStyle('dark-content', true)
+
+    Animated.spring(this.state.bounceImage, {
+      toValue: 100,
+      bounciness: 5,
       speed: .5,
     }).start();
+
+    Animated.spring(this.state.bounceHeader, {
+      toValue: circleSize + 35,
+      bounciness: 0,
+      speed: .5,
+    }).start();
+
+    Animated.timing(
+      this.state.fadeNextText,
+      {
+        toValue: 1,
+        duration: 1000,
+      }
+    ).start();
+  };
+
+  conceal = () => {
+    StatusBar.setBarStyle('light-content', true)
+
+    Animated.spring(this.state.bounceImage, {
+      toValue: -circleSize - 35,
+      bounciness: 2,
+      speed: .5,
+    }).start();
+
+    Animated.spring(this.state.bounceHeader, {
+      toValue: 0,
+      bounciness: 0,
+      speed: .5,
+    }).start();
+
+    Animated.timing(
+      this.state.fadeNextText,
+      {
+        toValue: 0,
+        duration: 500,
+      }
+    ).start();
   };
 
   render() {
-    this.slide();
     return (
-      <Animated.View style={[
-        styles.container,
-        {
-          transform: [
-            {translateY: this.state.bounceValue},
-          ]
-        }
-      ]} >
-        <View style={styles.background} >
-          <Image
-            style={styles.images}
-            source={images[this.state.imageIndex]}
-          />
+      <View style={styles.main}>
+        <Text style={styles.titleText}>
+          Move
+        </Text>
+
+        <Animated.View style={[
+          styles.header,
+          {
+            transform: [
+              {translateY: this.state.bounceHeader},
+            ]
+          }
+        ]}>
+          <Text style={styles.headerText}>
+            Lunge
+          </Text>
+        </Animated.View>
+
+        <Animated.View style={[
+          styles.container,
+          {
+            transform: [
+              {translateY: this.state.bounceImage},
+            ]
+          }
+        ]} >
+          <View style={styles.background} >
+            <Image
+              style={styles.images}
+              source={images[this.state.imageIndex]}
+            />
+          </View>
+        </Animated.View>
+
+        <View style={styles.progressContainer}>
+          <View style={styles.progress}>
+            <Progress.Bar progress={0.4} width={Dimensions.get('window').width-30} height={40} color='white' />
+          </View>
+          <View style={styles.progress}>
+            <Progress.Bar progress={.75} width={Dimensions.get('window').width-30} height={12} color='orange' />
+          </View>
+          <Animated.Text style={[
+            styles.nextText,
+            {
+              opacity: this.state.fadeNextText,
+            }
+          ]}>
+            Next: Burpees
+          </Animated.Text>
         </View>
-      </Animated.View>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity onPress={this.reveal}>
+            <Text style={styles.buttonText}>
+              Reveal
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={this.conceal}>
+            <Text style={styles.buttonText}>
+              Conceal
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   }
 
@@ -102,30 +197,107 @@ class App extends Component<Props> {
 
 export default ReactTimeout(App)
 
+const circleSize = windowWidth / 2;
+const backgroundWH = windowWidth * 2;
+
 const styles = StyleSheet.create({
+  main: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'black',
+  },
+  titleText: {
+    color: 'orange',
+    fontWeight: 'bold',
+    fontSize: windowHeight * .08,
+    textAlign: 'center',
+    padding: 10,
+    paddingTop: windowHeight * .10,
+    position: 'absolute',
+    top: 0,
+    width: '100%',
+  },
+  nextText: {
+    color: 'gray',
+    fontWeight: 'bold',
+    fontSize: windowHeight * .04,
+    textAlign: 'center',
+    padding: 10,
+    top: 0,
+    width: '100%',
+  },
   container: {
     alignSelf: 'center',
     marginTop: 35,
     width: windowWidth,
     overflow: 'hidden', // for hide the not important parts from circle
     margin: 10,
-    height: windowWidth / 2,
+    height: circleSize,
   },
   background: { // this shape is a circle
-    borderRadius: windowWidth * 2, // border borderRadius same as width and height
-    width: windowWidth * 2,
-    height: windowWidth * 2,
-    marginLeft: -windowWidth / 2, // reposition the circle inside parent view
+    borderRadius: backgroundWH, // border borderRadius same as width and height
+    width: backgroundWH,
+    height: backgroundWH,
+    marginLeft: -circleSize, // reposition the circle inside parent view
     position: 'absolute',
     bottom: 0, // show the bottom part of circle
     overflow: 'hidden', // hide not important part of image
   },
   images: {
-    height: windowWidth / 2, // same width and height for the container
+    height: circleSize, // same width and height for the container
     width: windowWidth,
     position: 'absolute', // position it in circle
     bottom: 0, // position it in circle
-    marginLeft: windowWidth / 2, // center it in main view same value as marginLeft for circle but positive
+    marginLeft: circleSize, // center it in main view same value as marginLeft for circle but positive
     resizeMode: 'contain',
-  }
+  },
+  header: {
+    backgroundColor: 'orange',
+    position: 'absolute',
+    top: -windowHeight / 3,
+    height: windowHeight / 3.5,
+    width: '100%',
+  },
+  headerText: {
+    color: 'black',
+    fontWeight: 'bold',
+    fontSize: 42,
+    textAlign: 'center',
+    padding: 10,
+    paddingTop: windowHeight * .10,
+    position: 'absolute',
+    top: 0,
+    width: '100%',
+  },
+  progressContainer: {
+      position: 'absolute',
+      width: '100%',
+      top: windowHeight - windowHeight * 0.40,
+  },
+  progress: {
+    alignItems: 'center',
+    flexDirection: 'column',
+    paddingBottom: 20,
+  },
+  buttonContainer: {
+    paddingTop: 25,
+    bottom: 10,
+    flex: 1,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 40,
+    width: '100%',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 22,
+    textAlign: 'center',
+    padding: 10,
+    margin: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'white',
+  },
 });
