@@ -105,6 +105,8 @@ class App extends Component<Props> {
         duration: 500,
       }
     ).start();
+
+    this.props.setTimeout(this.reveal, 1000);
   };
 
   render() {
@@ -161,14 +163,9 @@ class App extends Component<Props> {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity onPress={this.reveal}>
-            <Text style={styles.buttonText}>
-              Reveal
-            </Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={this.conceal}>
             <Text style={styles.buttonText}>
-              Conceal
+              Simulate
             </Text>
           </TouchableOpacity>
         </View>
