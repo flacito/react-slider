@@ -19,24 +19,20 @@ import {
 import ReactTimeout from 'react-timeout';
 import * as Progress from 'react-native-progress';
 
-const images = [
-  require('./images/lunge-1.png'),
-  require('./images/lunge-2.png'),
-  require('./images/lunge-3.png'),
-];
+import * as Workout from './workout.js';
 
 const windowWidth = Dimensions.get('window').width + Dimensions.get('window').width * .20;
 const windowHeight = Dimensions.get('window').height;
 
-type Props = {
-
-};
-
-class App extends Component<Props> {
+class App extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
+      exerciseIndex: 0,
+      exerciseTitle: Workout.moveExercises.exerciseArray[0].title,
+      nextTitle: Workout.moveExercises.exerciseArray[1].title,
+      images: Workout.moveExercises.exerciseArray[0].imageArray,
       imageIndex: 0,
       isUp: true,
       bounceImage: new Animated.Value(0),
@@ -47,7 +43,7 @@ class App extends Component<Props> {
 
   componentWillMount() {
     StatusBar.setBarStyle('light-content', true)
-    this.props.setInterval(this.nextExercise, 1000);
+    this.props.setInterval(this.nextImage, 750);
     this.setState({
       bounceImage: new Animated.Value(-circleSize - 35),
       bounceHeader: new Animated.Value(0),
@@ -59,8 +55,85 @@ class App extends Component<Props> {
     this.props.clearInterval();
   }
 
+  render() {
+    return (
+      <View style={styles.main}>
+
+        <Animated.View style={[
+          styles.header,
+          {
+            transform: [
+              {translateY: this.state.bounceHeader},
+            ]
+          }
+        ]}>
+          <Text style={styles.headerText}>
+            {this.state.exerciseTitle}
+          </Text>
+        </Animated.View>
+
+        <Animated.View style={[
+          styles.container,
+          {
+            transform: [
+              {translateY: this.state.bounceImage},
+            ]
+          }
+        ]} >
+          <View style={styles.background} >
+            <Image
+              style={styles.images}
+              source={this.state.images[this.state.imageIndex]}
+            />
+          </View>
+        </Animated.View>
+
+        <View style={styles.progressContainer}>
+          <View style={styles.progress}>
+            <Progress.Bar progress={0.4} width={Dimensions.get('window').width-30} height={40} color='white' />
+          </View>
+          <View style={styles.progress}>
+            <Progress.Bar progress={.75} width={Dimensions.get('window').width-30} height={12} color='orange' />
+          </View>
+          <Animated.Text style={[
+            styles.nextText,
+            {
+              opacity: this.state.fadeNextText,
+            }
+          ]}>
+            Next: {this.state.nextTitle}
+          </Animated.Text>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity onPress={this.conceal}>
+            <Text style={styles.buttonText}>
+              Simulate
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   reveal = () => {
     StatusBar.setBarStyle('dark-content', true)
+
+    if (this.state.exerciseIndex == 0) {
+      this.setState({
+        imageIndex: 0,
+        exerciseIndex: 1,
+        exerciseTitle: Workout.moveExercises.exerciseArray[1].title,
+        nextTitle: Workout.moveExercises.exerciseArray[0].title,
+      });
+    }
+    else {
+      this.setState({
+        exerciseIndex: 0,
+        exerciseTitle: Workout.moveExercises.exerciseArray[0].title,
+        nextTitle: Workout.moveExercises.exerciseArray[1].title,
+      });
+    }
 
     Animated.spring(this.state.bounceImage, {
       toValue: 100,
@@ -81,10 +154,19 @@ class App extends Component<Props> {
         duration: 1000,
       }
     ).start();
+  
   };
 
   conceal = () => {
     StatusBar.setBarStyle('light-content', true)
+
+    Animated.timing(
+      this.state.fadeNextText,
+      {
+        toValue: 0,
+        duration: 500,
+      }
+    ).start();
 
     Animated.spring(this.state.bounceImage, {
       toValue: -circleSize - 35,
@@ -98,91 +180,30 @@ class App extends Component<Props> {
       speed: .5,
     }).start();
 
-    Animated.timing(
-      this.state.fadeNextText,
-      {
-        toValue: 0,
-        duration: 500,
-      }
-    ).start();
+    if (this.state.exerciseIndex == 0) {
+      this.setState({
+        images: Workout.moveExercises.exerciseArray[1].imageArray,
+      });
+    }
+    else {
+      this.setState({
+        images: Workout.moveExercises.exerciseArray[0].imageArray,
+      });
+    }
 
     this.props.setTimeout(this.reveal, 1000);
   };
 
-  render() {
-    return (
-      <View style={styles.main}>
-        <Text style={styles.titleText}>
-          Move
-        </Text>
-
-        <Animated.View style={[
-          styles.header,
-          {
-            transform: [
-              {translateY: this.state.bounceHeader},
-            ]
-          }
-        ]}>
-          <Text style={styles.headerText}>
-            Lunge
-          </Text>
-        </Animated.View>
-
-        <Animated.View style={[
-          styles.container,
-          {
-            transform: [
-              {translateY: this.state.bounceImage},
-            ]
-          }
-        ]} >
-          <View style={styles.background} >
-            <Image
-              style={styles.images}
-              source={images[this.state.imageIndex]}
-            />
-          </View>
-        </Animated.View>
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progress}>
-            <Progress.Bar progress={0.4} width={Dimensions.get('window').width-30} height={40} color='white' />
-          </View>
-          <View style={styles.progress}>
-            <Progress.Bar progress={.75} width={Dimensions.get('window').width-30} height={12} color='orange' />
-          </View>
-          <Animated.Text style={[
-            styles.nextText,
-            {
-              opacity: this.state.fadeNextText,
-            }
-          ]}>
-            Next: Burpees
-          </Animated.Text>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity onPress={this.conceal}>
-            <Text style={styles.buttonText}>
-              Simulate
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  nextExercise = () => {
+  nextImage = () => {
     var curr = this.state.imageIndex;
     this.state.isUp ? curr = curr + 1 : curr = curr - 1;
-     if (curr > images.length - 1) {
+     if (curr > this.state.images.length - 1) {
        this.setState({isUp: false});
-       curr = images.length - 1;
+       curr = this.state.images.length - 2;
      }
      else if (curr < 0) {
        this.setState({isUp: true});
-       curr = 0;
+       curr = 1;
      }
 
      this.setState({
